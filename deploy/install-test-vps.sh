@@ -34,6 +34,11 @@ INSTALL_ROOT="${REGIONGATE_INSTALL_ROOT:-/opt/regiongate}"
 echo "=== RegionGate Test VPS install ==="
 echo "REPO=$REPO_ROOT  INSTALL=$INSTALL_ROOT  PRIVILEGED=$PRIVILEGED"
 
+# Install required system packages
+echo "=== Installing system dependencies ==="
+apt-get update -qq
+apt-get install -y -qq python3-venv python3-pip python3-dev build-essential || true
+
 if [[ $SMOKE_ONLY -eq 0 ]]; then
   mkdir -p /opt/regiongate /run/regiongate /var/lib/regiongate /etc/regiongate
   cp -a "$REPO_ROOT/." /opt/regiongate/
@@ -41,6 +46,7 @@ if [[ $SMOKE_ONLY -eq 0 ]]; then
 
   # Python venv for control-plane
   python3 -m venv /opt/regiongate/.venv
+  /opt/regiongate/.venv/bin/pip install -q --upgrade pip
   /opt/regiongate/.venv/bin/pip install -q -e control-plane/ || true
   /opt/regiongate/.venv/bin/pip install -q -e gateway-agent/ || true
 

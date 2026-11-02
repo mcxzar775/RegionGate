@@ -1,0 +1,50 @@
+# Local / staging development stack.
+# Production Edge + Agent run under systemd with minimal privileges.
+# Do not mount Docker Socket into the Agent container.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: regiongate
+      POSTGRES_PASSWORD: regiongate_dev
+      POSTGRES_DB: regiongate
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U regiongate"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  control-plane:
+    build:
+      context: ../control-plane
+    environment:
+      REGIONGATE_DATABASE_URL: postgresql+asyncpg://regiongate:regiongate_dev@db:5432/regiongate
+      REGIONGATE_TOKEN_SIGNING_KEY: change-me-in-production-32bytes!!
+      REGIONGATE_CONFIG_SIGNING_PRIVATE_KEY: change-me-ed25519
+      REGIONGATE_ADMIN_BOOTSTRAP_PASSWORD: change-me-bootstrap
+      REGIONGATE_AGENT_SOCKET: /run/regiongate/agent.sock
+      REGIONGATE_API_ORIGIN: http://localhost:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - agent_sock:/run/regiongate
+    depends_on:
+      db:
+        condition: service_healthy
+
+  admin:
+    build:
+      context: ../admin
+    ports:
+      - "5173:80"
+    depends_on:
+      - control-plane
+
+volumes:
+  pgdata:
+  agent_sock:

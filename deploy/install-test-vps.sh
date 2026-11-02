@@ -41,6 +41,7 @@ apt-get install -y -qq python3-venv python3-pip python3-dev build-essential || t
 
 if [[ $SMOKE_ONLY -eq 0 ]]; then
   mkdir -p /opt/regiongate /run/regiongate /var/lib/regiongate /etc/regiongate
+  chmod 755 /var/lib/regiongate
   cp -a "$REPO_ROOT/." /opt/regiongate/
   cd /opt/regiongate
 
@@ -52,7 +53,7 @@ if [[ $SMOKE_ONLY -eq 0 ]]; then
 
   cat > /etc/regiongate/test.env <<EOF
 REGIONGATE_AGENT_DRY_RUN=1
-REGIONGATE_DATABASE_URL=sqlite+aiosqlite:///var/lib/regiongate/regiongate.db
+REGIONGATE_DATABASE_URL=sqlite+aiosqlite:////var/lib/regiongate/regiongate.db
 REGIONGATE_ADMIN_BOOTSTRAP_PASSWORD=changeme
 EOF
 

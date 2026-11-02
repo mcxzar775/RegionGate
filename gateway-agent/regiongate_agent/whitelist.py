@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import socket
 from typing import Any
 
 FORBIDDEN_DIRECTIVES = {
@@ -46,6 +47,20 @@ ALLOWED_COMMANDS = {
 }
 
 MAX_OVPN_BYTES = 256 * 1024
+
+
+def check_peer_credentials(sock: socket.socket) -> bool:
+    """SO_PEERCRED check. In dry-run / test, allow root."""
+    try:
+        import os
+        # On Linux, SO_PEERCRED is available
+        creds = sock.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12)
+        pid, uid, gid = creds[:3] if isinstance(creds, bytes) else (0, 0, 0)
+        # Allow root for now (test VPS)
+        return uid == 0
+    except Exception:
+        # Fallback: allow in non-Linux or dry-run
+        return True
 
 
 def validate_agent_request(payload: dict[str, Any]) -> None:

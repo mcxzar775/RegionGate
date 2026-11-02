@@ -10,7 +10,7 @@ import base64
 import csv
 import io
 import logging
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import httpx
@@ -58,7 +58,7 @@ async def sync_candidates(db: AsyncSession) -> int:
             ip=row.get("IP", ""),
             score=int(row.get("Score", 0) or 0),
             status="healthy",
-            last_synced_at=datetime.now(UTC),
+            last_synced_at=datetime.now(timezone.utc),
         )
         db.add(cand)
         count += 1

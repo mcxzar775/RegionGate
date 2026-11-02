@@ -15,10 +15,17 @@ sudo bash deploy/install-test-vps.sh
 
 ## Verify
 
+Wait a few seconds after install, then:
+
 ```bash
+systemctl status regiongate-api
+journalctl -u regiongate-api -n 50 --no-pager
 curl http://127.0.0.1:8000/
-# Expect: {"status":"ok","service":"regiongate-control-plane"}
 ```
+
+Expect: `{"status":"ok","service":"regiongate-control-plane"}`
+
+If connection refused, check logs above for import errors.
 
 ## Smoke
 

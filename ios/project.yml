@@ -1,0 +1,22 @@
+name: RegionGate
+options:
+  bundleIdPrefix: com.regiongate
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  SWIFT_VERSION: "5.9"
+targets:
+  RegionGate:
+    type: application
+    platform: iOS
+    sources:
+      - RegionGate
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.regiongate.app
+  RegionGateTunnel:
+    type: app-extension
+    platform: iOS
+    sources:
+      - RegionGateTunnel
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.regiongate.app.tunnel

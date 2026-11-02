@@ -36,7 +36,7 @@ def create_access_token(
     expires_minutes: Optional[int] = None,
 ) -> str:
     settings = get_settings()
-    ttl = expires_minutes or settings.access_token_ttl_minutes
+    ttl = expires_minutes or getattr(settings, "access_token_expire_minutes", 30)
     now = datetime.now(timezone.utc)
     payload: dict[str, Any] = {
         "sub": subject,
@@ -46,6 +46,24 @@ def create_access_token(
     }
     if extra:
         payload.update(extra)
+    return jwt.encode(payload, settings.token_signing_key, algorithm="HS256")
+
+
+def create_refresh_token(
+    subject: str,
+    *,
+    token_type: str = "admin",
+    expires_days: int = 30,
+) -> str:
+    settings = get_settings()
+    now = datetime.now(timezone.utc)
+    payload: dict[str, Any] = {
+        "sub": subject,
+        "type": token_type,
+        "refresh": True,
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(days=expires_days)).timestamp()),
+    }
     return jwt.encode(payload, settings.token_signing_key, algorithm="HS256")
 
 

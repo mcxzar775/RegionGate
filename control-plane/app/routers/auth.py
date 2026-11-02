@@ -39,7 +39,7 @@ async def login(req: LoginRequest, db: Annotated[AsyncSession, Depends(get_db)])
     refresh = create_refresh_token(str(user.id), "admin")
     db.add(Session(admin_user_id=user.id, refresh_token_hash=hash_password(refresh), expires_at=datetime.now(timezone.utc) + timedelta(days=30)))
     await db.commit()
-    return TokenResponse(access_token=access, refresh_token=refresh, expires_in=settings.access_token_expire_minutes * 60)
+    return TokenResponse(access_token=access, refresh_token=refresh, expires_in=getattr(settings, "access_token_ttl_minutes", 30) * 60)
 
 
 @enrollment_router.post("/codes", response_model=EnrollmentCodeCreateResponse)

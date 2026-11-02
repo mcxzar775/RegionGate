@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -13,6 +14,7 @@ from app.models import AdminUser, Base
 from app.routers import auth, exits, nodes, ops, regions
 from app.security import hash_password
 
+logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
@@ -20,6 +22,7 @@ async def bootstrap_admin() -> None:
     async with async_session() as session:
         result = await session.execute(select(AdminUser).limit(1))
         if result.scalar_one_or_none() is not None:
+            logger.info("admin user already exists, skip bootstrap")
             return
         admin = AdminUser(
             username="admin",
@@ -28,7 +31,7 @@ async def bootstrap_admin() -> None:
         )
         session.add(admin)
         await session.commit()
-        print(f"[bootstrap] created admin user 'admin' with bootstrap password")
+        logger.info("bootstrap created admin user 'admin'")
 
 
 @asynccontextmanager

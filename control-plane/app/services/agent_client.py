@@ -48,6 +48,19 @@ def call_agent(payload: dict[str, Any], timeout: float = 30.0) -> dict[str, Any]
         sock.close()
 
 
+class AgentClient:
+    """Async-friendly wrapper. Uses sync call_agent under the hood for now."""
+
+    async def call(self, method: str, params: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+        payload = {"command": method}
+        if params:
+            payload.update(params)
+        try:
+            return call_agent(payload)
+        except AgentError as exc:
+            return {"ok": False, "message": str(exc), "detail": exc.detail}
+
+
 def agent_health() -> dict[str, Any]:
     try:
         return call_agent({"command": "health"})

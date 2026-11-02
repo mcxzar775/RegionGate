@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import socket
+import struct
 from typing import Any
 
 FORBIDDEN_DIRECTIVES = {
@@ -50,24 +51,32 @@ MAX_OVPN_BYTES = 256 * 1024
 
 
 def check_peer_credentials(sock: socket.socket) -> bool:
-    """SO_PEERCRED check. In dry-run / test, allow root."""
+    """SO_PEERCRED. Test VPS allows root only."""
     try:
-        import os
-        # On Linux, SO_PEERCRED is available
         creds = sock.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12)
-        pid, uid, gid = creds[:3] if isinstance(creds, bytes) else (0, 0, 0)
-        # Allow root for now (test VPS)
-        return uid == 0
+        if isinstance(creds, bytes) and len(creds) >= 12:
+            _pid, uid, _gid = struct.unpack("@iii", creds[:12])
+            return uid == 0
+        return False
     except Exception:
-        # Fallback: allow in non-Linux or dry-run
-        return True
+        return False
 
 
 def validate_agent_request(payload: dict[str, Any]) -> None:
-    cmd = payload.get("command")
+    cmd = payload.get("command") or payload.get("method")
     if not cmd or cmd not in ALLOWED_COMMANDS:
         raise ValueError(f"command not allowed: {cmd!r}")
-    allowed_keys = {"command", "slot_id", "namespace", "ovpn_b64", "region", "request_id", "params"}
+    allowed_keys = {
+        "command",
+        "method",
+        "params",
+        "slot_id",
+        "namespace",
+        "ovpn_b64",
+        "ovpn_content",
+        "region",
+        "request_id",
+    }
     extra = set(payload.keys()) - allowed_keys
     if extra:
         raise ValueError(f"extra fields rejected: {sorted(extra)}")
@@ -85,6 +94,8 @@ def validate_ovpn_content(content: str) -> list[str]:
     for line in content.splitlines():
         stripped = line.strip()
         if not stripped or stripped.startswith("#") or stripped.startswith(";"):
+            continue
+        if stripped.startswith("<") or stripped.startswith("</"):
             continue
         token = re.split(r"\s+", stripped, maxsplit=1)[0].lower()
         if token in FORBIDDEN_DIRECTIVES:

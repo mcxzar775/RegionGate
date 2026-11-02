@@ -12,9 +12,9 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite+aiosqlite:///./regiongate.db"
     token_signing_key: str = "dev-only-change-me-32-bytes-key!!"
-    config_signing_private_key: str = ""  # Ed25519 PEM or raw; empty = dev unsigned
+    config_signing_private_key: str = ""
     admin_bootstrap_password: str = "change-me-bootstrap"
-    agent_socket: str = "/tmp/regiongate-agent.sock"
+    agent_socket: str = "/run/regiongate/agent.sock"
     api_origin: str = "http://localhost:8000"
     edge_host: str = "edge.example.com"
     edge_port: int = 443

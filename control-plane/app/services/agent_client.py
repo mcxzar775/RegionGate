@@ -28,13 +28,13 @@ def call_agent(payload: dict[str, Any], timeout: float = 30.0) -> dict[str, Any]
         sock.connect(path)
         sock.sendall(data)
         buf = b""
-        while True:
+        while b"\n" not in buf:
             chunk = sock.recv(65536)
             if not chunk:
                 break
             buf += chunk
-            if b"\n" in buf:
-                break
+        if not buf:
+            raise AgentError("empty agent response")
         line = buf.split(b"\n", 1)[0]
         result = json.loads(line.decode("utf-8"))
         if not result.get("ok"):
@@ -49,38 +49,17 @@ def call_agent(payload: dict[str, Any], timeout: float = 30.0) -> dict[str, Any]
 
 
 class AgentClient:
-    """Async-friendly wrapper. Uses sync call_agent under the hood for now."""
+    """Speaks the agent protocol: {method, params}."""
 
     async def call(self, method: str, params: Optional[dict[str, Any]] = None) -> dict[str, Any]:
-        payload = {"command": method}
-        if params:
-            payload.update(params)
         try:
-            return call_agent(payload)
+            return call_agent({"method": method, "params": params or {}})
         except AgentError as exc:
             return {"ok": False, "message": str(exc), "detail": exc.detail}
 
 
 def agent_health() -> dict[str, Any]:
     try:
-        return call_agent({"command": "health"})
+        return call_agent({"method": "health", "params": {}})
     except AgentError as exc:
         return {"ok": False, "error": str(exc)}
-
-
-def create_slot(slot_id: str, region: str) -> dict[str, Any]:
-    return call_agent({"command": "create_slot", "slot_id": slot_id, "region": region})
-
-
-def start_openvpn(slot_id: str, ovpn_b64: str) -> dict[str, Any]:
-    return call_agent(
-        {"command": "start_openvpn", "slot_id": slot_id, "ovpn_b64": ovpn_b64}
-    )
-
-
-def test_exit(slot_id: str) -> dict[str, Any]:
-    return call_agent({"command": "test_exit", "slot_id": slot_id})
-
-
-def destroy_slot(slot_id: str) -> dict[str, Any]:
-    return call_agent({"command": "destroy_slot", "slot_id": slot_id})

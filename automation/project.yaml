@@ -1,0 +1,6 @@
+project: RegionGate
+version: "2.0.0"
+protocol_baseline: "VLESS + XHTTP + REALITY (X25519)"
+status: phase-0-to-5-scaffold-complete
+
+source_of_truth: docs/CLOUD_AUTOMATION_PROJECT_BRIEF.md

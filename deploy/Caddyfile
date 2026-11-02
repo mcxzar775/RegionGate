@@ -1,0 +1,9 @@
+# Example reverse proxy. MVP: API on 8443, Edge on 443 separately.
+# Do not mix unverified REALITY fallback with admin on the same socket without audit.
+
+api.example.com:8443 {
+	reverse_proxy control-plane:8000
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+}

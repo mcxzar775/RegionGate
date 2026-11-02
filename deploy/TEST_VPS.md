@@ -1,14 +1,32 @@
-# 测试 VPS 部署
+# Test VPS Deployment
 
-## 一键安装（默认 dry-run）
+## Prerequisites
+- Ubuntu 22.04+
+- Root access
+- Python 3.10+
+
+## Install
 
 ```bash
+git clone https://github.com/mcxzar775/RegionGate.git
+cd RegionGate
 sudo bash deploy/install-test-vps.sh
 ```
 
-默认 dry-run：API + Agent，不建真实 netns。
+## Verify
 
-安装后：
-- 密码：sudo grep ADMIN_BOOTSTRAP /etc/regiongate/test.env
-- API：http://<VPS-IP>:8000/docs
-- smoke：sudo bash /opt/regiongate/deploy/install-test-vps.sh --smoke-only
+```bash
+curl http://127.0.0.1:8000/
+# Expect: {"status":"ok","service":"regiongate-control-plane"}
+```
+
+## Smoke
+
+```bash
+# Login (after bootstrap)
+curl -X POST http://127.0.0.1:8000/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"changeme"}'
+```
+
+Agent runs in dry-run mode by default.

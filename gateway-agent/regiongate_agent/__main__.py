@@ -1,4 +1,4 @@
-"""RegionGate Agent entrypoint."""
+"""Entry point for regiongate-agent."""
 
 from regiongate_agent.server import main
 

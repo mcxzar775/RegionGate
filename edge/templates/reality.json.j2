@@ -1,0 +1,37 @@
+{
+  "inbounds": [
+    {
+      "port": 443,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {% for client in clients %}
+          {
+            "id": "{{ client.uuid }}",
+            "email": "{{ client.email }}",
+            "flow": ""
+          }{% if not loop.last %},{% endif %}
+          {% endfor %}
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "dest": "{{ dest }}",
+          "xver": 0,
+          "serverNames": ["{{ server_name }}"],
+          "privateKey": "{{ private_key }}",
+          "shortIds": {{ short_ids | tojson }}
+        }
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom"
+    }
+  ]
+}

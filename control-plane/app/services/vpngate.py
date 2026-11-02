@@ -25,14 +25,15 @@ VPNGATE_CSV_URL = "https://www.vpngate.net/api/iphone/"
 
 
 async def sync_candidates(db: AsyncSession) -> int:
+    print("VPNGate sync started", flush=True)
     try:
         async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
             resp = await client.get(VPNGATE_CSV_URL)
             resp.raise_for_status()
             text = resp.text
-        logger.info("VPNGate feed fetched, length=%d", len(text))
+        print(f"VPNGate feed fetched, length={len(text)}", flush=True)
     except Exception as exc:
-        logger.warning("VPNGate fetch failed: %s", exc)
+        print(f"VPNGate fetch failed: {exc}", flush=True)
         return 0
 
     # VPNGate sometimes wraps in base64; try decode if it looks like it
@@ -41,12 +42,12 @@ async def sync_candidates(db: AsyncSession) -> int:
             decoded = base64.b64decode(text).decode("utf-8", errors="ignore")
             if "HostName" in decoded or "IP" in decoded:
                 text = decoded
-                logger.info("VPNGate feed decoded from base64")
+                print("VPNGate feed decoded from base64", flush=True)
         except Exception as exc:
-            logger.info("VPNGate base64 decode skipped: %s", exc)
+            print(f"VPNGate base64 decode skipped: {exc}", flush=True)
 
     # Log first 200 chars for debugging
-    logger.info("VPNGate feed preview: %s", text[:200].replace("\n", " "))
+    print(f"VPNGate feed preview: {text[:200].replace(chr(10), ' ')}", flush=True)
 
     reader = csv.DictReader(io.StringIO(text))
     count = 0
@@ -83,5 +84,5 @@ async def sync_candidates(db: AsyncSession) -> int:
         count += 1
 
     await db.commit()
-    logger.info("synced %d VPNGate candidates (skipped %d)", count, skipped)
+    print(f"synced {count} VPNGate candidates (skipped {skipped})", flush=True)
     return count

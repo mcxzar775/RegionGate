@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import csv
 import io
-import logging
 from datetime import datetime, timezone
 
 import httpx
@@ -20,29 +19,28 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Region, VpngateCandidate
 
-logger = logging.getLogger(__name__)
-
 VPNGATE_CSV_URL = "https://www.vpngate.net/api/iphone/"
+PARSER = "v2"
 
 
 def _csv_body(text: str) -> str:
     """Drop the *vpn_servers banner and the leading # on the header row."""
-    lines = text.splitlines()
+    lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
     start = 0
     for i, line in enumerate(lines):
-        stripped = line.lstrip("\ufeff").lstrip()
-        if "HostName" in stripped and "CountryShort" in stripped:
+        stripped = line.lstrip("\ufeff").strip()
+        if "HostName" in stripped and "IP" in stripped and "CountryShort" in stripped:
             if stripped.startswith("#"):
                 lines[i] = stripped[1:]
+            else:
+                lines[i] = stripped
             start = i
             break
-    body = "\n".join(lines[start:])
-    # trailing '*' marker is not a data row
-    return body
+    return "\n".join(lines[start:])
 
 
 async def sync_candidates(db: AsyncSession) -> int:
-    print("VPNGate sync started", flush=True)
+    print(f"VPNGate sync started parser={PARSER}", flush=True)
     try:
         async with httpx.AsyncClient(timeout=60, follow_redirects=True) as client:
             resp = await client.get(VPNGATE_CSV_URL)
@@ -58,12 +56,13 @@ async def sync_candidates(db: AsyncSession) -> int:
     print(f"VPNGate columns: {reader.fieldnames}", flush=True)
 
     count = 0
+    updated = 0
     skipped = 0
     for row in reader:
         if not row:
             continue
         hostname = (row.get("HostName") or "").strip()
-        if not hostname or hostname == "*":
+        if not hostname or hostname.startswith("*") or hostname.startswith("#"):
             skipped += 1
             continue
         ip = (row.get("IP") or "").strip()
@@ -82,13 +81,18 @@ async def sync_candidates(db: AsyncSession) -> int:
             select(VpngateCandidate).where(VpngateCandidate.external_id == hostname)
         )
         cand = existing.scalar_one_or_none()
-        score = int(row.get("Score") or 0)
+        try:
+            score = int(float(row.get("Score") or 0))
+        except ValueError:
+            score = 0
         if cand:
             cand.ip = ip
             cand.region_code = country
+            cand.hostname = hostname
             cand.score = score
             cand.status = "healthy"
             cand.last_synced_at = datetime.now(timezone.utc)
+            updated += 1
             continue
 
         db.add(
@@ -105,5 +109,8 @@ async def sync_candidates(db: AsyncSession) -> int:
         count += 1
 
     await db.commit()
-    print(f"synced {count} new VPNGate candidates (skipped {skipped})", flush=True)
-    return count
+    print(
+        f"synced {count} new, updated {updated}, skipped {skipped} parser={PARSER}",
+        flush=True,
+    )
+    return count + updated

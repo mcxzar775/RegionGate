@@ -17,7 +17,8 @@ router = APIRouter(prefix="/regions", tags=["regions"])
 @router.get("", response_model=list[RegionOut])
 async def list_regions(db: Annotated[AsyncSession, Depends(get_db)], admin: Annotated[AdminUser, Depends(get_current_admin)]):
     result = await db.execute(select(Region).order_by(Region.priority))
-    return result.scalars().all()
+    regions = result.scalars().all()
+    return list(regions)
 
 
 @router.post("", response_model=RegionOut)
@@ -25,7 +26,7 @@ async def create_region(req: RegionCreate, db: Annotated[AsyncSession, Depends(g
     existing = await db.get(Region, req.code)
     if existing:
         raise HTTPException(400, "Region exists")
-    region = Region(code=req.code, name=req.name, priority=req.priority or 100)
+    region = Region(code=req.code, name=req.name, priority=req.priority or 100, enabled=True)
     db.add(region)
     await db.commit()
     await db.refresh(region)

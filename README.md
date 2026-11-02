@@ -1,33 +1,25 @@
 # RegionGate
 
-自托管 iPhone 地区出口管理系统。
+Per-exit isolated network namespaces + VLESS/XHTTP/REALITY edge + control plane.
 
-**协议基线（锁定）**: VLESS + XHTTP + REALITY (X25519)  
-**出口来源**: VPNGate（每个活动出口运行在独立 Linux network namespace）  
-**客户端**: iOS SwiftUI + NetworkExtension Packet Tunnel + libXray  
-**控制面**: HTTPS JSON API + SSE  
-**管理端**: 响应式中文网页后台  
-
-本文档与 `docs/CLOUD_AUTOMATION_PROJECT_BRIEF.md` 为唯一协议与交付基线。仓库内旧文档或代码与基线冲突时，以基线为准。
-
-## 仓库结构
-
-```text
-regiongate/
-├── ios/
-├── control-plane/
-├── admin/
-├── edge/
-├── gateway-agent/
-├── deploy/
-├── automation/
-└── docs/
-```
-
-## 快速开始
+## Quick start (test VPS)
 
 ```bash
+git clone https://github.com/mcxzar775/RegionGate.git
+cd RegionGate
 sudo bash deploy/install-test-vps.sh
+curl http://127.0.0.1:8000/
 ```
 
-协议基线: VLESS + XHTTP + REALITY (X25519)
+## Structure
+
+- `control-plane/` — FastAPI + SQLAlchemy
+- `gateway-agent/` — Unix socket privileged agent (dry-run by default)
+- `edge/` — Xray config renderer
+- `admin/` — Chinese web admin
+- `ios/` — SwiftUI + Packet Tunnel skeleton
+- `deploy/` — install scripts + compose
+
+## Status
+
+See `docs/STATUS.md`.

@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Node
+node_modules/
+dist/
+.vite/
+*.local
+.npm
+.yarn/
+
+# iOS / Xcode
+ios/*.xcodeproj/
+ios/*.xcworkspace/
+ios/DerivedData/
+ios/Pods/
+ios/*.xcuserstate
+ios/xcuserdata/
+*.mobileprovision
+*.p12
+*.cer
+
+# Secrets & local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+*.secret
+regiongate-agent.sock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs & temp
+*.log
+tmp/
+temp/
+.cache/
+
+# Database
+*.db
+*.sqlite3
+
+# Docker
+.docker/
+
+# Generated
+control-plane/app/openapi.json
+admin/dist/
+edge/generated/

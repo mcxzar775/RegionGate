@@ -1,0 +1,18 @@
+[Unit]
+Description=RegionGate Gateway Agent
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=regiongate
+Environment=REGIONGATE_AGENT_DRY_RUN=0
+Environment=REGIONGATE_AGENT_SOCKET_PATH=/run/regiongate/agent.sock
+ExecStart=/usr/local/bin/regiongate-agent
+Restart=on-failure
+NoNewPrivileges=false
+ProtectSystem=strict
+ReadWritePaths=/run/regiongate /var/lib/regiongate /var/run/netns
+
+[Install]
+WantedBy=multi-user.target

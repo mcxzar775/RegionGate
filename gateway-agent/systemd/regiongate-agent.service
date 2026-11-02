@@ -4,15 +4,12 @@ After=network.target
 
 [Service]
 Type=simple
-User=root
-Group=regiongate
-Environment=REGIONGATE_AGENT_DRY_RUN=0
-Environment=REGIONGATE_AGENT_SOCKET_PATH=/run/regiongate/agent.sock
-ExecStart=/usr/local/bin/regiongate-agent
+Environment=REGIONGATE_AGENT_DRY_RUN=1
+Environment=REGIONGATE_AGENT_SOCKET=/run/regiongate/agent.sock
+ExecStart=/opt/regiongate/.venv/bin/python -m regiongate_agent
 Restart=on-failure
-NoNewPrivileges=false
-ProtectSystem=strict
-ReadWritePaths=/run/regiongate /var/lib/regiongate /var/run/netns
+RuntimeDirectory=regiongate
+RuntimeDirectoryMode=0755
 
 [Install]
 WantedBy=multi-user.target

@@ -1,10 +1,7 @@
 """VPNGate public feed sync.
 
-Feed format (text/plain CSV):
-  *vpn_servers
-  #HostName,IP,Score,Ping,Speed,CountryLong,CountryShort,...
-  public-vpn-1,1.2.3.4,...,Japan,JP,...
-  *
+The embedded OpenVPN profile is stored in raw_meta for the control plane
+only. Candidate API responses do not include it.
 """
 
 from __future__ import annotations
@@ -20,20 +17,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Region, VpngateCandidate
 
 VPNGATE_CSV_URL = "https://www.vpngate.net/api/iphone/"
-PARSER = "v2"
+PARSER = "v3"
 
 
 def _csv_body(text: str) -> str:
-    """Drop the *vpn_servers banner and the leading # on the header row."""
     lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
     start = 0
     for i, line in enumerate(lines):
         stripped = line.lstrip("\ufeff").strip()
         if "HostName" in stripped and "IP" in stripped and "CountryShort" in stripped:
-            if stripped.startswith("#"):
-                lines[i] = stripped[1:]
-            else:
-                lines[i] = stripped
+            lines[i] = stripped[1:] if stripped.startswith("#") else stripped
             start = i
             break
     return "\n".join(lines[start:])
@@ -51,8 +44,7 @@ async def sync_candidates(db: AsyncSession) -> int:
         print(f"VPNGate fetch failed: {exc}", flush=True)
         return 0
 
-    body = _csv_body(text)
-    reader = csv.DictReader(io.StringIO(body))
+    reader = csv.DictReader(io.StringIO(_csv_body(text)))
     print(f"VPNGate columns: {reader.fieldnames}", flush=True)
 
     count = 0
@@ -77,20 +69,26 @@ async def sync_candidates(db: AsyncSession) -> int:
             db.add(Region(code=country, name=name))
             await db.flush()
 
-        existing = await db.execute(
-            select(VpngateCandidate).where(VpngateCandidate.external_id == hostname)
-        )
-        cand = existing.scalar_one_or_none()
         try:
             score = int(float(row.get("Score") or 0))
         except ValueError:
             score = 0
+        ovpn_b64 = (row.get("OpenVPN_ConfigData_Base64") or "").strip()
+        meta = {"operator": (row.get("Operator") or "")[:120], "has_ovpn": bool(ovpn_b64)}
+        if ovpn_b64:
+            meta["ovpn_b64"] = ovpn_b64
+
+        existing = await db.execute(
+            select(VpngateCandidate).where(VpngateCandidate.external_id == hostname)
+        )
+        cand = existing.scalar_one_or_none()
         if cand:
             cand.ip = ip
             cand.region_code = country
             cand.hostname = hostname
             cand.score = score
             cand.status = "healthy"
+            cand.raw_meta = meta
             cand.last_synced_at = datetime.now(timezone.utc)
             updated += 1
             continue
@@ -103,6 +101,7 @@ async def sync_candidates(db: AsyncSession) -> int:
                 ip=ip,
                 score=score,
                 status="healthy",
+                raw_meta=meta,
                 last_synced_at=datetime.now(timezone.utc),
             )
         )

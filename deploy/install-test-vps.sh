@@ -55,6 +55,7 @@ if [[ $SMOKE_ONLY -eq 0 ]]; then
 REGIONGATE_AGENT_DRY_RUN=1
 REGIONGATE_DATABASE_URL=sqlite+aiosqlite:////var/lib/regiongate/regiongate.db
 REGIONGATE_ADMIN_BOOTSTRAP_PASSWORD=changeme
+REGIONGATE_TOKEN_SIGNING_KEY=dev-only-change-me-32-bytes-key!!
 EOF
 
   # systemd units (minimal)
@@ -78,4 +79,5 @@ EOF
 fi
 
 echo "=== Done. API should be on :8000 ==="
+echo "Admin bootstrap: username=admin  password=changeme"
 echo "curl http://127.0.0.1:8000/"

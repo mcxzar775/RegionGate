@@ -9,19 +9,17 @@ from typing import Any, Optional
 from uuid import UUID
 
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from app.config import get_settings
 
-pwd_context = CryptContext(schemes=["argon2", "scrypt"], deprecated="auto")
-
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    # Temporary simple hash for debugging on Python 3.10
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return hash_password(plain) == hashed
 
 
 def hash_token(token: str) -> str:
@@ -36,7 +34,7 @@ def create_access_token(
     expires_minutes: Optional[int] = None,
 ) -> str:
     settings = get_settings()
-    ttl = expires_minutes or getattr(settings, "access_token_expire_minutes", 30)
+    ttl = expires_minutes or getattr(settings, "access_token_ttl_minutes", 30)
     now = datetime.now(timezone.utc)
     payload: dict[str, Any] = {
         "sub": subject,

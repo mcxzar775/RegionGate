@@ -30,6 +30,7 @@ async def sync_candidates(db: AsyncSession) -> int:
             resp = await client.get(VPNGATE_CSV_URL)
             resp.raise_for_status()
             text = resp.text
+        logger.info("VPNGate feed fetched, length=%d", len(text))
     except Exception as exc:
         logger.warning("VPNGate fetch failed: %s", exc)
         return 0
@@ -40,15 +41,21 @@ async def sync_candidates(db: AsyncSession) -> int:
             decoded = base64.b64decode(text).decode("utf-8", errors="ignore")
             if "HostName" in decoded or "IP" in decoded:
                 text = decoded
-        except Exception:
-            pass
+                logger.info("VPNGate feed decoded from base64")
+        except Exception as exc:
+            logger.info("VPNGate base64 decode skipped: %s", exc)
+
+    # Log first 200 chars for debugging
+    logger.info("VPNGate feed preview: %s", text[:200].replace("\n", " "))
 
     reader = csv.DictReader(io.StringIO(text))
     count = 0
+    skipped = 0
     for row in reader:
         ip = row.get("IP") or row.get("ip")
         country = (row.get("CountryLong") or row.get("CountryShort") or "")[:2].upper()
         if not ip or not country:
+            skipped += 1
             continue
 
         # Ensure region exists
@@ -76,5 +83,5 @@ async def sync_candidates(db: AsyncSession) -> int:
         count += 1
 
     await db.commit()
-    logger.info("synced %d VPNGate candidates", count)
+    logger.info("synced %d VPNGate candidates (skipped %d)", count, skipped)
     return count

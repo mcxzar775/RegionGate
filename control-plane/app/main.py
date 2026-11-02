@@ -21,12 +21,15 @@ settings = get_settings()
 async def bootstrap_admin() -> None:
     async with async_session() as session:
         result = await session.execute(select(AdminUser).limit(1))
-        if result.scalar_one_or_none() is not None:
-            logger.info("admin user already exists, skip bootstrap")
+        existing = result.scalar_one_or_none()
+        if existing is not None:
+            logger.info("admin user already exists (username=%s), skip bootstrap", existing.username)
             return
+        pw = settings.admin_bootstrap_password
+        logger.info("bootstrap: creating admin with password length=%d", len(pw))
         admin = AdminUser(
             username="admin",
-            password_hash=hash_password(settings.admin_bootstrap_password),
+            password_hash=hash_password(pw),
             is_active=True,
         )
         session.add(admin)

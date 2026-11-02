@@ -2,7 +2,7 @@
 name = "regiongate-agent"
 version = "0.1.0"
 description = "RegionGate privileged gateway agent (namespace / OpenVPN / SOCKS)"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 dependencies = [
   "pydantic>=2.9.0",
   "pydantic-settings>=2.6.0",
@@ -30,4 +30,4 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py310"
